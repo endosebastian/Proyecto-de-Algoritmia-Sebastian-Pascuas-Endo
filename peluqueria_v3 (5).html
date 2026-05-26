@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NEXTCUT — Sistema de Peluquería</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #e2c47a;
+      --dark: #0a0a0a;
+      --glass-border: rgba(201,168,76,0.18);
+      --text: #f0ece4;
+      --muted: rgba(240,236,228,0.55);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ══ FONDO DINÁMICO ══ */
+    #bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      transition: opacity 0.7s ease;
+    }
+
+    #bg-img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: brightness(0.18) saturate(0.5);
+      transition: opacity 0.6s ease;
+    }
+
+    #bg-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 15% 20%, rgba(201,168,76,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 70% at 85% 85%, rgba(201,168,76,0.06) 0%, transparent 60%),
+        linear-gradient(160deg, rgba(10,10,10,0.5) 0%, rgba(10,10,10,0.9) 100%);
+    }
+
+    /* ══ APP ══ */
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px 20px 60px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 880px;
+      background: rgba(12,10,8,0.84);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 40px 36px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,168,76,0.05);
+    }
+
+    /* ══ TIPOGRAFÍA ══ */
+    .brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .brand-sub {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-top: 6px;
+      margin-bottom: 30px;
+    }
+
+    h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold-light); }
+    h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--gold-light); margin-bottom: 16px; }
+    h4 { font-size: 1rem; font-weight: 600; }
+
+    /* ══ INPUTS ══ */
+    input, select {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.06);
+    }
+    input::placeholder { color: var(--muted); }
+    select option { background: #1a1a1a; color: var(--text); }
+
+    /* ══ BOTONES ══ */
+    .btn {
+      display: block; width: 100%;
+      padding: 13px 20px;
+      border: none; border-radius: 12px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 600;
+      letter-spacing: 0.3px;
+      transition: all 0.22s;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), #a07830);
+      color: #0a0a0a;
+      box-shadow: 0 4px 20px rgba(201,168,76,0.25);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(201,168,76,0.4);
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.11); transform: translateY(-1px); }
+    .btn-danger {
+      background: rgba(192,57,43,0.15);
+      color: #e57373;
+      border: 1px solid rgba(192,57,43,0.3);
+    }
+    .btn-danger:hover { background: rgba(192,57,43,0.3); transform: translateY(-1px); }
+    .btn-sm { width:auto; padding:8px 16px; font-size:13px; margin-bottom:0; border-radius:8px; }
+    .btn-logout {
+      background: rgba(192,57,43,0.15);
+      color: #e57373;
+      border: 1px solid rgba(192,57,43,0.25);
+      width:auto; padding:9px 20px; margin-bottom:0; border-radius:10px;
+    }
+    .btn-logout:hover { background: rgba(192,57,43,0.3); }
+
+    /* ══ TOPBAR ══ */
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; gap:16px; }
+
+    /* ══ CARDS ══ */
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(201,168,76,0.1);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: rgba(201,168,76,0.22); }
+    .card-section {
+      background: rgba(12,10,8,0.5);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-top: 8px;
+    }
+
+    /* ══ SERVICE ROW ══ */
+    .service-row { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+
+    /* ══ SLOTS ══ */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .slot {
+      padding: 14px 10px;
+      border-radius: 12px;
+      background: rgba(39,174,96,0.15);
+      border: 1px solid rgba(39,174,96,0.3);
+      text-align: center;
+      font-weight: 600; font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #5dca87;
+    }
+    .slot:hover { background: rgba(39,174,96,0.25); transform: scale(1.04); }
+    .slot.selected { background: rgba(201,168,76,0.2); border-color: var(--gold); color: var(--gold-light); }
+
+    /* ══ DIVIDER ══ */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent);
+      margin: 20px 0;
+    }
+
+    /* ══ BADGE ══ */
+    .badge {
+      display: inline-block; font-size: 11px;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(201,168,76,0.15);
+      color: var(--gold-light);
+      border: 1px solid rgba(201,168,76,0.2);
+    }
+    .badge-phone {
+      background: rgba(39,174,96,0.1);
+      color: #5dca87;
+      border-color: rgba(39,174,96,0.2);
+    }
+
+    /* ══ HIDDEN ══ */
+    .hidden { display: none !important; }
+
+    /* ══ PHONE GROUP ══ */
+    .phone-group { display:flex; gap:8px; margin-bottom:14px; }
+    .phone-prefix { flex:0 0 80px; margin-bottom:0 !important; }
+    .phone-number { flex:1; margin-bottom:0 !important; }
+
+    /* ══ RESERVATION CARD ══ */
+    .res-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(201,168,76,0.1);
+      border-radius: 14px; padding: 16px; margin-bottom: 12px;
+    }
+    .res-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px; }
+    .res-card-info { display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:var(--muted); }
+    .res-info-item { display:flex; align-items:center; gap:5px; }
+
+    /* ══ USER GROUP HEADER ══ */
+    .user-group-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 10px 0 8px;
+      border-bottom: 1px solid rgba(201,168,76,0.12);
+      margin: 20px 0 10px;
+    }
+
+    /* ══ MENU GRID ══ */
+    .menu-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .menu-grid .btn { margin-bottom:0; }
+
+    .small { font-size:13px; color:var(--muted); }
+    p { margin-bottom:6px; }
+
+    @media (max-width:500px) {
+      .container { padding:24px 18px; }
+      .brand { font-size:2rem; }
+      .menu-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- FONDO DINÁMICO -->
+<div id="bg">
+  <img id="bg-img"
+    src="https://images.unsplash.com/photo-1621607512022-6aecc4fed814?w=1600&q=80"
+    alt="">
+  <div id="bg-overlay"></div>
+</div>
+
+<div class="app">
+<div class="container">
+
+  <!-- ══ LOGIN ══ -->
+  <div id="loginScreen">
+    <div class="brand">✂ NEXTCUT</div>
+    <div class="brand-sub">Sistema profesional de reservas</div>
+
+    <div id="homeOptions">
+      <button class="btn btn-primary" onclick="mostrarLogin()">Iniciar Sesión</button>
+      <p style="text-align:center;margin:8px 0;color:var(--muted);font-size:14px;">¿No tiene cuenta?</p>
+      <button class="btn btn-ghost" onclick="mostrarRegistro()">Crear cuenta</button>
+    </div>
+
+    <div id="loginBox" class="hidden">
+      <input type="text" id="loginUser" placeholder="Usuario">
+      <input type="password" id="loginPass" placeholder="Contraseña">
+      <button class="btn btn-primary" onclick="login()">Ingresar</button>
+      <button class="btn btn-ghost" onclick="volverInicio()">⬅ Volver</button>
+    </div>
+
+    <div id="registerBox" class="hidden">
+      <input type="text" id="registerUser" placeholder="Nombre de usuario (8–12 caracteres)">
+      <input type="password" id="registerPass" placeholder="Contraseña (8–12 caracteres)">
+      <button class="btn btn-primary" onclick="register()">Crear cuenta</button>
+      <button class="btn btn-ghost" onclick="volverInicio()">⬅ Volver</button>
+    </div>
+  </div>
+
+  <!-- ══ CLIENTE ══ -->
+  <div id="clientPanel" class="hidden">
+    <div class="topbar">
+      <h2>💈 Panel Cliente</h2>
+      <button class="btn btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+
+    <div id="clientMenu">
+      <div class="menu-grid">
+        <button class="btn btn-ghost" onclick="mostrarSeccion('catalogoSection');loadCatalogoCliente();cambiarFondo('catalogo')">✂️ Ver catálogo</button>
+        <button class="btn btn-ghost" onclick="mostrarSeccion('reservarSection');loadServiceSelect();cambiarFondo('reservar')">📅 Reservar cita</button>
+        <button class="btn btn-ghost" onclick="mostrarSeccion('misReservasSection');loadMyReservations();cambiarFondo('misreservas')">📋 Mis reservas</button>
+        <button class="btn btn-ghost" onclick="mostrarSeccion('perfilSection');loadPerfil();cambiarFondo('misreservas')" style="grid-column:1/-1">👤 Mi perfil</button>
+      </div>
+
+      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-top:16px;line-height:1.6;padding:0 6px">
+        📱 Enlaza tu número de teléfono en <strong style="color:var(--gold-light)">Mi perfil</strong> para poder recibir llamadas del barbero en caso de cualquier inconveniente con tu cita.
+      </p>
+
+      <div class="divider" style="margin:18px 0"></div>
+
+      <div style="
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        background:rgba(201,168,76,0.07);
+        border:1px solid rgba(201,168,76,0.15);
+        border-radius:14px;padding:14px 18px;
+      ">
+        <div>
+          <p style="font-size:13px;font-weight:600;margin-bottom:3px">📞 Contacto del barbero</p>
+          <p style="font-size:12px;color:var(--muted);margin:0">¿Dudas o cambios? Escríbele directamente</p>
+        </div>
+        <a href="tel:+573146883890" style="
+          text-decoration:none;
+          background:linear-gradient(135deg,var(--gold),#a07830);
+          color:#0a0a0a;
+          font-weight:700;
+          font-size:13px;
+          padding:9px 16px;
+          border-radius:10px;
+          white-space:nowrap;
+          flex-shrink:0;
+        ">📱 Llamar</a>
+      </div>
+      <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px">314 688 3890</p>
+
+    </div>
+
+    <div id="catalogoSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverMenuCliente();cambiarFondo('cliente')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>✂️ Catálogo de servicios</h3>
+        <div id="catalogoCliente"></div>
+      </div>
+    </div>
+
+    <div id="reservarSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverMenuCliente();cambiarFondo('cliente')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>📅 Reservar cita</h3>
+        <select id="serviceSelect"></select>
+        <input type="date" id="dateInput">
+        <button class="btn btn-primary" onclick="mostrarHorarios()">Ver horarios disponibles</button>
+        <div class="slots-grid" id="slots"></div>
+      </div>
+    </div>
+
+    <div id="misReservasSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverMenuCliente();cambiarFondo('cliente')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>📋 Mis reservas</h3>
+        <div id="myReservations"></div>
+      </div>
+    </div>
+    <div id="perfilSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverMenuCliente();cambiarFondo('cliente')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>👤 Mi perfil</h3>
+        <div id="perfilInfo"></div>
+        <div class="divider"></div>
+        <h3 style="margin-top:8px">📱 Vincular celular</h3>
+        <p class="small" style="margin-bottom:14px">Tu número aparecerá visible para que la peluquería pueda contactarte.</p>
+        <div class="phone-group">
+          <input class="phone-prefix" type="text" id="perfilPrefix" value="+57" placeholder="+57">
+          <input class="phone-number" type="tel" id="perfilPhone" placeholder="300 000 0000">
+        </div>
+        <button class="btn btn-primary" onclick="guardarTelefono()">💾 Guardar número</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN ══ -->
+  <div id="adminPanel" class="hidden">
+    <div class="topbar">
+      <h2>👑 Panel Administrador</h2>
+      <button class="btn btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+
+    <div id="adminMenu">
+      <div class="menu-grid">
+        <button class="btn btn-ghost" onclick="mostrarAdmin('addServiceSection');cambiarFondo('addservice')">➕ Añadir servicio</button>
+        <button class="btn btn-ghost" onclick="mostrarAdmin('servicesSection');loadServices();cambiarFondo('services')">💈 Ver servicios</button>
+        <button class="btn btn-ghost" onclick="mostrarAdmin('editSection');loadServices();cambiarFondo('edit')">✏️ Editar servicio</button>
+        <button class="btn btn-ghost" onclick="mostrarAdmin('reservationsSection');loadReservations();cambiarFondo('adminreservas')">📅 Ver reservas</button>
+      </div>
+    </div>
+
+    <div id="addServiceSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverAdmin();cambiarFondo('admin')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>➕ Añadir servicio</h3>
+        <input type="text" id="serviceName" placeholder="Nombre del servicio">
+        <input type="number" id="servicePrice" placeholder="Precio ($)">
+        <button class="btn btn-primary" onclick="addService()">Guardar servicio</button>
+      </div>
+    </div>
+
+    <div id="servicesSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverAdmin();cambiarFondo('admin')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>💈 Servicios registrados</h3>
+        <div id="servicesList"></div>
+      </div>
+    </div>
+
+    <div id="editSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverAdmin();cambiarFondo('admin')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>✏️ Editar servicio</h3>
+        <select id="editServiceSelect"></select>
+        <input type="text" id="editServiceName" placeholder="Nuevo nombre">
+        <input type="number" id="editServicePrice" placeholder="Nuevo precio">
+        <button class="btn btn-primary" onclick="editService()">Guardar cambios</button>
+      </div>
+    </div>
+
+    <div id="reservationsSection" class="hidden">
+      <button class="btn btn-danger btn-sm" onclick="volverAdmin();cambiarFondo('admin')">⬅ Volver</button>
+      <div class="divider"></div>
+      <div class="card-section">
+        <h3>📅 Reservas del sistema</h3>
+        <div id="allReservations"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script type="module">
+
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs,
+  deleteDoc, updateDoc, doc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA2uUJtCNG5b6OMNKZAaTz9mVoSFSMX0fQ",
+  authDomain: "proyecto-peluqueria-93617.firebaseapp.com",
+  projectId: "proyecto-peluqueria-93617",
+  storageBucket: "proyecto-peluqueria-93617.firebasestorage.app",
+  messagingSenderId: "69097359037",
+  appId: "1:69097359037:web:8bb412d56d277f3c9759d4",
+  measurementId: "G-XST66D3Q5T"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const ADMIN_USER = "Admn1234";
+const ADMIN_PASS = "Admn1234";
+
+let currentUser = null;
+let currentUserPhone = null;
+let currentUserDocId = null;
+let selectedHour = null;
+
+const usersRef        = collection(db, "usuarios");
+const servicesRef     = collection(db, "servicios");
+const reservationsRef = collection(db, "reservas");
+
+// ══ FONDO DINÁMICO ══
+// Todas son fotos de Unsplash con IDs fijos y confiables
+const FONDOS = {
+  login:        "photo-1621607512022-6aecc4fed814",  // barbería iluminada
+  registro:     "photo-1503951914875-452162b0f3f1",  // barbero trabajando
+  loginbox:     "photo-1559599101-f09722fb4948",     // herramientas barbería
+  cliente:      "photo-1560066984-138daaa5fb4c",     // silla peluquería
+  catalogo:     "photo-1599351431202-1e0f0137899a",  // productos peluquería
+  reservar:     "photo-1512690459411-b9245aed614b",  // espejo peluquería
+  misreservas:  "photo-1540555700478-4be289fbecef",  // interior salón
+  admin:        "photo-1585747860715-2ba37e788b70",  // tijeras y navaja
+  addservice:   "photo-1622296089863-eb7fc530daa8",  // detalle corte
+  services:     "photo-1503951914875-452162b0f3f1",  // barbero vista
+  edit:         "photo-1605497788044-5a32c7078486",  // herramientas colección
+  adminreservas:"photo-1521590832167-7bcbfaa6381f",  // agenda salón
+};
+
+window.cambiarFondo = function(clave) {
+  const id = FONDOS[clave] || FONDOS.login;
+  const img = document.getElementById("bg-img");
+  img.style.opacity = "0";
+  setTimeout(() => {
+    img.src = `https://images.unsplash.com/${id}?w=1600&q=80`;
+    img.onload = () => { img.style.opacity = "1"; };
+  }, 300);
+};
+
+// ══ REGISTER ══
+window.register = async function () {
+  const user = document.getElementById("registerUser").value.trim();
+  const pass = document.getElementById("registerPass").value.trim();
+
+  if(user.length < 8 || user.length > 12){ alert("El usuario debe tener entre 8 y 12 caracteres"); return; }
+  if(pass.length < 8 || pass.length > 12){ alert("La contraseña debe tener entre 8 y 12 caracteres"); return; }
+
+  const snapshot = await getDocs(usersRef);
+  let existe = false;
+  snapshot.forEach(docu => { if(docu.data().user === user) existe = true; });
+  if(existe){ alert("Ese usuario ya existe"); return; }
+
+  await addDoc(usersRef, { user, pass, phone: "" });
+  alert("✅ Cuenta creada correctamente");
+  volverInicio();
+};
+
+// ══ LOGIN ══
+window.login = async function () {
+  const user = document.getElementById("loginUser").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+
+  if(user === ADMIN_USER && pass === ADMIN_PASS){
+    currentUser = user;
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("adminPanel").classList.remove("hidden");
+    cambiarFondo("admin");
+    loadServices(); loadReservations();
+    return;
+  }
+
+  const snapshot = await getDocs(usersRef);
+  let encontrado = false, userPhone = "", userDocId = null;
+  snapshot.forEach(docu => {
+    const d = docu.data();
+    if(d.user === user && d.pass === pass){
+      encontrado = true;
+      userPhone = d.phone || "";
+      userDocId = docu.id;
+    }
+  });
+
+  if(!encontrado){ alert("Credenciales incorrectas"); return; }
+
+  currentUser = user;
+  currentUserPhone = userPhone;
+  currentUserDocId = userDocId;
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("clientPanel").classList.remove("hidden");
+  cambiarFondo("cliente");
+  loadServiceSelect(); loadMyReservations(); loadCatalogoCliente();
+};
+
+// ══ ADD SERVICE ══
+window.addService = async function () {
+  const name  = document.getElementById("serviceName").value.trim();
+  const price = document.getElementById("servicePrice").value;
+  if(!name || price <= 0){ alert("Datos inválidos"); return; }
+  await addDoc(servicesRef, { name, price });
+  document.getElementById("serviceName").value = "";
+  document.getElementById("servicePrice").value = "";
+  alert("✅ Servicio añadido");
+  loadServices();
+};
+
+// ══ LOAD SERVICES ══
+window.loadServices = async function () {
+  const container = document.getElementById("servicesList");
+  container.innerHTML = "";
+  document.getElementById("editServiceSelect").innerHTML = "";
+  const snapshot = await getDocs(servicesRef);
+  snapshot.forEach(docu => {
+    const s = docu.data();
+    document.getElementById("editServiceSelect").innerHTML += `<option value="${docu.id}">${s.name}</option>`;
+    container.innerHTML += `
+      <div class="card">
+        <div class="service-row">
+          <div><h4>✂️ ${s.name}</h4><p class="small">$${s.price}</p></div>
+          <button class="btn btn-danger btn-sm" onclick="deleteService('${docu.id}')">Eliminar</button>
+        </div>
+      </div>`;
+  });
+};
+
+// ══ DELETE SERVICE ══
+window.deleteService = async function (id) {
+  if(!confirm("¿Eliminar este servicio?")) return;
+  await deleteDoc(doc(db, "servicios", id));
+  loadServices();
+};
+
+// ══ EDIT SERVICE ══
+window.editService = async function () {
+  const id = document.getElementById("editServiceSelect").value;
+  const newName  = document.getElementById("editServiceName").value.trim();
+  const newPrice = document.getElementById("editServicePrice").value;
+  if(!newName || newPrice <= 0){ alert("Datos inválidos"); return; }
+  await updateDoc(doc(db, "servicios", id), { name: newName, price: newPrice });
+  alert("✅ Servicio actualizado");
+  loadServices(); loadServiceSelect();
+};
+
+// ══ CATÁLOGO CLIENTE ══
+window.loadCatalogoCliente = async function () {
+  const container = document.getElementById("catalogoCliente");
+  container.innerHTML = "";
+  const snapshot = await getDocs(servicesRef);
+  snapshot.forEach(docu => {
+    const s = docu.data();
+    container.innerHTML += `
+      <div class="card">
+        <div class="service-row">
+          <h4>✂️ ${s.name}</h4>
+          <span class="badge">$${s.price}</span>
+        </div>
+      </div>`;
+  });
+};
+
+// ══ PERFIL ══
+window.loadPerfil = function () {
+  const container = document.getElementById("perfilInfo");
+  container.innerHTML = `
+    <div class="card" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-size:2rem">👤</div>
+        <div>
+          <h4>${currentUser}</h4>
+          ${currentUserPhone
+            ? `<a href="tel:${currentUserPhone}" class="badge badge-phone" style="text-decoration:none;margin-top:6px;display:inline-block">📱 ${currentUserPhone} — Llamar</a>`
+            : `<span class="small" style="margin-top:4px;display:block">Sin número vinculado</span>`}
+        </div>
+      </div>
+    </div>`;
+  if(currentUserPhone){
+    document.getElementById("perfilPrefix").value = currentUserPhone.replace(/\d.*/,'') || "+57";
+    document.getElementById("perfilPhone").value  = currentUserPhone.replace(/^\+\d{1,3}/,'');
+  }
+};
+
+window.guardarTelefono = async function () {
+  const prefix   = document.getElementById("perfilPrefix").value.trim();
+  const phoneRaw = document.getElementById("perfilPhone").value.trim().replace(/\s/g,'');
+  if(!phoneRaw || phoneRaw.length < 7){ alert("📱 Ingresa un número válido"); return; }
+  const fullPhone = prefix + phoneRaw;
+  if(!currentUserDocId){ alert("Error: recarga la página e inicia sesión de nuevo"); return; }
+  await updateDoc(doc(db, "usuarios", currentUserDocId), { phone: fullPhone });
+  currentUserPhone = fullPhone;
+  alert("✅ Número vinculado correctamente");
+  loadPerfil();
+};
+
+// ══ SERVICE SELECT ══
+window.loadServiceSelect = async function () {
+  const select = document.getElementById("serviceSelect");
+  select.innerHTML = "";
+  const snapshot = await getDocs(servicesRef);
+  snapshot.forEach(docu => {
+    const s = docu.data();
+    select.innerHTML += `<option value="${docu.id}">${s.name} — $${s.price}</option>`;
+  });
+};
+
+// ══ HORARIOS ══
+window.mostrarHorarios = async function () {
+  const date = document.getElementById("dateInput").value;
+  if(!date){ alert("Seleccione una fecha"); return; }
+  const slotsDiv = document.getElementById("slots");
+  slotsDiv.innerHTML = "";
+  const snapshot = await getDocs(reservationsRef);
+  const reservas = [];
+  snapshot.forEach(docu => reservas.push(docu.data()));
+
+  for(let hour = 9; hour < 17; hour++){
+    if(hour === 12) continue;
+    [0,30].forEach(min => {
+      const time = `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+      const ocupado = reservas.find(r => r.date === date && r.time === time);
+      if(!ocupado){
+        const div = document.createElement("div");
+        div.className = "slot";
+        div.innerText = time;
+        div.onclick = () => {
+          document.querySelectorAll(".slot").forEach(s => s.classList.remove("selected"));
+          div.classList.add("selected");
+          selectedHour = time;
+          reservar();
+        };
+        slotsDiv.appendChild(div);
+      }
+    });
+  }
+  if(slotsDiv.innerHTML === "")
+    slotsDiv.innerHTML = `<p style="color:var(--muted);grid-column:1/-1">No hay horarios disponibles.</p>`;
+};
+
+// ══ RESERVAR ══
+window.reservar = async function () {
+  if(!selectedHour) return;
+  const serviceId = document.getElementById("serviceSelect").value;
+  const date = document.getElementById("dateInput").value;
+  const snapshot = await getDocs(servicesRef);
+  let serviceData = null;
+  snapshot.forEach(docu => { if(docu.id === serviceId) serviceData = docu.data(); });
+  await addDoc(reservationsRef, {
+    user: currentUser, phone: currentUserPhone || "",
+    service: serviceData.name, price: serviceData.price, date, time: selectedHour
+  });
+  alert("✅ Reserva creada correctamente");
+  selectedHour = null;
+  mostrarHorarios(); loadMyReservations();
+};
+
+// ══ MIS RESERVAS (cliente puede cancelar) ══
+window.loadMyReservations = async function () {
+  const container = document.getElementById("myReservations");
+  container.innerHTML = "";
+  const snapshot = await getDocs(reservationsRef);
+  const userNorm = currentUser.trim().toLowerCase();
+  let hay = false;
+  snapshot.forEach(docu => {
+    const r = docu.data();
+    if(r.user && r.user.trim().toLowerCase() === userNorm){
+      hay = true;
+      container.innerHTML += `
+        <div class="res-card">
+          <div class="res-card-header">
+            <h4>✂️ ${r.service}</h4>
+            <button class="btn btn-danger btn-sm" onclick="cancelarReservaCliente('${docu.id}')">🗑 Cancelar</button>
+          </div>
+          <div class="res-card-info">
+            <span class="res-info-item">📅 ${r.date}</span>
+            <span class="res-info-item">🕒 ${r.time}</span>
+            <span class="res-info-item">💰 $${r.price}</span>
+            ${r.phone ? `<span class="res-info-item badge badge-phone">📱 ${r.phone}</span>` : ''}
+          </div>
+        </div>`;
+    }
+  });
+  if(!hay) container.innerHTML = `<p style="color:var(--muted)">No tienes reservas registradas.</p>`;
+};
+
+// ══ CANCELAR (cliente) ══
+window.cancelarReservaCliente = async function (id) {
+  if(!confirm("¿Deseas cancelar esta cita?")) return;
+  await deleteDoc(doc(db, "reservas", id));
+  alert("Cita cancelada.");
+  loadMyReservations();
+};
+
+// ══ RESERVAS ADMIN ══
+window.loadReservations = async function () {
+  const container = document.getElementById("allReservations");
+  container.innerHTML = "";
+  const snapshot = await getDocs(reservationsRef);
+  const grupos = {};
+  snapshot.forEach(docu => {
+    const r = docu.data();
+    const nombre = r.user || "Sin usuario";
+    if(!grupos[nombre]) grupos[nombre] = [];
+    grupos[nombre].push({ ...r, id: docu.id });
+  });
+  const usuarios = Object.keys(grupos);
+  if(usuarios.length === 0){ container.innerHTML = `<p style="color:var(--muted)">No hay reservas.</p>`; return; }
+  usuarios.forEach(nombre => {
+    const reservas = grupos[nombre];
+    container.innerHTML += `
+      <div class="user-group-header">
+        <div>
+          <h4>👤 ${nombre}</h4>
+          ${reservas[0].phone ? `<a href="tel:${reservas[0].phone}" class="small badge badge-phone" style="margin-top:4px;display:inline-block;text-decoration:none">📱 ${reservas[0].phone} — Llamar</a>` : '<span class="small" style="margin-top:4px;display:block;color:var(--muted)">Sin teléfono vinculado</span>'}
+        </div>
+        <span class="badge">${reservas.length} cita${reservas.length !== 1 ? 's' : ''}</span>
+      </div>`;
+    reservas.forEach(r => {
+      container.innerHTML += `
+        <div class="res-card" style="margin-left:12px;">
+          <div class="res-card-header">
+            <h4>✂️ ${r.service}</h4>
+            <button class="btn btn-danger btn-sm" onclick="cancelarReservaAdmin('${r.id}')">🗑 Cancelar</button>
+          </div>
+          <div class="res-card-info">
+            <span class="res-info-item">📅 ${r.date}</span>
+            <span class="res-info-item">🕒 ${r.time}</span>
+            <span class="res-info-item">💰 $${r.price}</span>
+          </div>
+        </div>`;
+    });
+  });
+};
+
+// ══ CANCELAR (admin) ══
+window.cancelarReservaAdmin = async function (id) {
+  if(!confirm("¿Cancelar esta cita?")) return;
+  await deleteDoc(doc(db, "reservas", id));
+  alert("Cita cancelada.");
+  loadReservations();
+};
+
+// ══ NAVEGACIÓN ══
+window.logout = function () { location.reload(); };
+
+window.mostrarLogin = function () {
+  document.getElementById("homeOptions").classList.add("hidden");
+  document.getElementById("loginBox").classList.remove("hidden");
+  cambiarFondo("loginbox");
+};
+
+window.mostrarRegistro = function () {
+  document.getElementById("homeOptions").classList.add("hidden");
+  document.getElementById("registerBox").classList.remove("hidden");
+  cambiarFondo("registro");
+};
+
+window.volverInicio = function () {
+  document.getElementById("homeOptions").classList.remove("hidden");
+  document.getElementById("loginBox").classList.add("hidden");
+  document.getElementById("registerBox").classList.add("hidden");
+  cambiarFondo("login");
+};
+
+window.mostrarSeccion = function (id) {
+  document.getElementById("clientMenu").classList.add("hidden");
+  ["catalogoSection","reservarSection","misReservasSection","perfilSection"].forEach(s =>
+    document.getElementById(s).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+};
+
+window.volverMenuCliente = function () {
+  document.getElementById("clientMenu").classList.remove("hidden");
+  ["catalogoSection","reservarSection","misReservasSection","perfilSection"].forEach(s =>
+    document.getElementById(s).classList.add("hidden"));
+};
+
+window.mostrarAdmin = function (id) {
+  document.getElementById("adminMenu").classList.add("hidden");
+  ["addServiceSection","servicesSection","editSection","reservationsSection"].forEach(s =>
+    document.getElementById(s).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+};
+
+window.volverAdmin = function () {
+  document.getElementById("adminMenu").classList.remove("hidden");
+  ["addServiceSection","servicesSection","editSection","reservationsSection"].forEach(s =>
+    document.getElementById(s).classList.add("hidden"));
+};
+
+</script>
+</body>
+</html>
